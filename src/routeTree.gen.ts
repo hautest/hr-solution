@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EmployeeIdIndexRouteImport } from './routes/employee/$id/index'
 import { Route as EmployeeIdWorkDateRouteImport } from './routes/employee/$id/work/$date'
+import { Route as EmployeeIdDayDateRouteImport } from './routes/employee/$id/day/$date'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,34 +29,56 @@ const EmployeeIdWorkDateRoute = EmployeeIdWorkDateRouteImport.update({
   path: '/employee/$id/work/$date',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EmployeeIdDayDateRoute = EmployeeIdDayDateRouteImport.update({
+  id: '/employee/$id/day/$date',
+  path: '/employee/$id/day/$date',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/employee/$id': typeof EmployeeIdIndexRoute
+  '/employee/$id/day/$date': typeof EmployeeIdDayDateRoute
   '/employee/$id/work/$date': typeof EmployeeIdWorkDateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/employee/$id': typeof EmployeeIdIndexRoute
+  '/employee/$id/day/$date': typeof EmployeeIdDayDateRoute
   '/employee/$id/work/$date': typeof EmployeeIdWorkDateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/employee/$id/': typeof EmployeeIdIndexRoute
+  '/employee/$id/day/$date': typeof EmployeeIdDayDateRoute
   '/employee/$id/work/$date': typeof EmployeeIdWorkDateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/employee/$id' | '/employee/$id/work/$date'
+  fullPaths:
+    | '/'
+    | '/employee/$id'
+    | '/employee/$id/day/$date'
+    | '/employee/$id/work/$date'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/employee/$id' | '/employee/$id/work/$date'
-  id: '__root__' | '/' | '/employee/$id/' | '/employee/$id/work/$date'
+  to:
+    | '/'
+    | '/employee/$id'
+    | '/employee/$id/day/$date'
+    | '/employee/$id/work/$date'
+  id:
+    | '__root__'
+    | '/'
+    | '/employee/$id/'
+    | '/employee/$id/day/$date'
+    | '/employee/$id/work/$date'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   EmployeeIdIndexRoute: typeof EmployeeIdIndexRoute
+  EmployeeIdDayDateRoute: typeof EmployeeIdDayDateRoute
   EmployeeIdWorkDateRoute: typeof EmployeeIdWorkDateRoute
 }
 
@@ -82,12 +105,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EmployeeIdWorkDateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/employee/$id/day/$date': {
+      id: '/employee/$id/day/$date'
+      path: '/employee/$id/day/$date'
+      fullPath: '/employee/$id/day/$date'
+      preLoaderRoute: typeof EmployeeIdDayDateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EmployeeIdIndexRoute: EmployeeIdIndexRoute,
+  EmployeeIdDayDateRoute: EmployeeIdDayDateRoute,
   EmployeeIdWorkDateRoute: EmployeeIdWorkDateRoute,
 }
 export const routeTree = rootRouteImport

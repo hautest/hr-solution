@@ -1,53 +1,61 @@
-import { Employee, AttendanceRecord, StatusChange, EditHistory } from '../types/employee';
-import { format, subDays, addHours } from 'date-fns';
+import { Employee, AttendanceRecord, StatusChange, EditHistory, CompanyDashboard, CompanyEvent, WorkStatus } from '../types/employee';
+import { format, subDays, addHours, startOfDay } from 'date-fns';
 
-const generateStatusChanges = (date: Date, workType: 'office' | 'remote'): StatusChange[] => {
+const workStatuses: WorkStatus[] = ['여의도_출근', '샛강_출근', '재택_출근', '외근', '복귀', '휴식', '식사', '퇴근'];
+
+const generateStatusChanges = (date: Date, office: '여의도' | '샛강'): StatusChange[] => {
   const changes: StatusChange[] = [];
   
-  // 출근
+  // 출근 (9:00-9:30 사이)
   const startTime = new Date(date);
-  startTime.setHours(9, Math.floor(Math.random() * 30), 0, 0); // 9:00-9:30 사이
+  const startHour = 9 + Math.floor(Math.random() * 0.5);
+  const startMinute = Math.floor(Math.random() * 30);
+  startTime.setHours(startHour, startMinute, 0, 0);
+  
+  const workType = Math.random() > 0.7 ? '재택_출근' : (office === '여의도' ? '여의도_출근' : '샛강_출근');
+  
   changes.push({
     id: `${date.toISOString()}-start`,
-    time: startTime.toISOString(),
-    status: workType === 'office' ? 'work_office' : 'work_remote',
-    slackKeyword: workType === 'office' ? '출근' : '재택 시작',
-    slackMessageLink: `https://slack.com/archives/C123456/${Date.now()}`,
+    time: format(startTime, 'HH:mm'),
+    status: workType,
+    slackKeyword: workType === '재택_출근' ? '재택' : '출근',
+    slackMessageLink: `https://raftel.slack.com/archives/C123456/${Date.now()}`,
     isManualEntry: false,
   });
 
-  // 점심시간
+  // 점심시간 (12:00-13:00 사이)
   const lunchStart = new Date(date);
-  lunchStart.setHours(12, Math.floor(Math.random() * 30), 0, 0); // 12:00-12:30 사이
+  lunchStart.setHours(12, Math.floor(Math.random() * 60), 0, 0);
   changes.push({
     id: `${date.toISOString()}-lunch-start`,
-    time: lunchStart.toISOString(),
-    status: 'break',
-    slackKeyword: '점심',
-    slackMessageLink: `https://slack.com/archives/C123456/${Date.now() + 1}`,
+    time: format(lunchStart, 'HH:mm'),
+    status: '식사',
+    slackKeyword: '식사',
+    slackMessageLink: `https://raftel.slack.com/archives/C123456/${Date.now() + 1}`,
     isManualEntry: false,
   });
 
-  // 점심시간 종료
-  const lunchEnd = addHours(lunchStart, 1);
+  // 복귀 (13:00-14:00 사이)
+  const lunchEnd = new Date(lunchStart);
+  lunchEnd.setHours(lunchEnd.getHours() + 1);
   changes.push({
     id: `${date.toISOString()}-lunch-end`,
-    time: lunchEnd.toISOString(),
-    status: workType === 'office' ? 'work_office' : 'work_remote',
-    slackKeyword: '업무 복귀',
-    slackMessageLink: `https://slack.com/archives/C123456/${Date.now() + 2}`,
+    time: format(lunchEnd, 'HH:mm'),
+    status: '복귀',
+    slackKeyword: '복귀',
+    slackMessageLink: `https://raftel.slack.com/archives/C123456/${Date.now() + 2}`,
     isManualEntry: false,
   });
 
-  // 퇴근
+  // 퇴근 (18:00-19:30 사이)
   const endTime = new Date(date);
-  endTime.setHours(18, Math.floor(Math.random() * 60), 0, 0); // 18:00-19:00 사이
+  endTime.setHours(18 + Math.floor(Math.random() * 1.5), Math.floor(Math.random() * 60), 0, 0);
   changes.push({
     id: `${date.toISOString()}-end`,
-    time: endTime.toISOString(),
-    status: 'off',
+    time: format(endTime, 'HH:mm'),
+    status: '퇴근',
     slackKeyword: '퇴근',
-    slackMessageLink: `https://slack.com/archives/C123456/${Date.now() + 3}`,
+    slackMessageLink: `https://raftel.slack.com/archives/C123456/${Date.now() + 3}`,
     isManualEntry: false,
   });
 
@@ -57,13 +65,13 @@ const generateStatusChanges = (date: Date, workType: 'office' | 'remote'): Statu
 const generateEditHistory = (): EditHistory[] => {
   const histories: EditHistory[] = [];
   
-  if (Math.random() > 0.7) { // 30% 확률로 수정 이력 생성
+  if (Math.random() > 0.8) {
     histories.push({
       id: `edit-${Date.now()}`,
       timestamp: subDays(new Date(), Math.floor(Math.random() * 7)).toISOString(),
-      editedBy: '관리자',
-      action: 'edit',
-      description: '점심시간 시작 시간 수정',
+      editedBy: '인사팀 관리자',
+      action: 'correct',
+      description: '점심시간 정정',
       oldValue: '12:00',
       newValue: '12:30',
     });
@@ -72,31 +80,30 @@ const generateEditHistory = (): EditHistory[] => {
   return histories;
 };
 
-const generateAttendanceRecords = (): AttendanceRecord[] => {
+const generateAttendanceRecords = (office: '여의도' | '샛강'): AttendanceRecord[] => {
   const records: AttendanceRecord[] = [];
   
-  // 최근 30일간의 근무 기록 생성
   for (let i = 0; i < 30; i++) {
     const date = subDays(new Date(), i);
     const dateStr = format(date, 'yyyy-MM-dd');
     
-    // 주말은 건너뛰기
+    // 주말과 일부 공휴일 제외
     if (date.getDay() === 0 || date.getDay() === 6) {
       continue;
     }
     
-    const workType = Math.random() > 0.6 ? 'remote' : 'office'; // 40% 원격, 60% 사무실
-    const statusChanges = generateStatusChanges(date, workType);
-    
-    // 총 근무시간 계산 (8-9시간 사이)
+    const statusChanges = generateStatusChanges(date, office);
     const totalWorkHours = 7.5 + Math.random() * 1.5;
     
     records.push({
       date: dateStr,
       totalWorkHours,
-      totalBreakHours: 1, // 점심시간 1시간
+      totalBreakHours: 1,
       statusChanges,
       editHistory: generateEditHistory(),
+      memo: Math.random() > 0.8 ? '클라이언트 미팅으로 인한 외근' : undefined,
+      memoEditedBy: Math.random() > 0.8 ? '본인' : undefined,
+      memoEditedAt: Math.random() > 0.8 ? new Date().toISOString() : undefined,
     });
   }
   
@@ -106,92 +113,206 @@ const generateAttendanceRecords = (): AttendanceRecord[] => {
 export const mockEmployees: Employee[] = [
   {
     id: '1',
-    name: '김민수',
-    nickname: '민수',
+    name: '김개발',
+    nickname: '개발',
     team: '개발팀',
-    attendanceRecords: generateAttendanceRecords(),
+    office: '여의도',
+    role: '팀원',
+    slackUserId: 'U1234567890',
+    googleCalendarId: 'dev@raftel.com',
+    attendanceRecords: generateAttendanceRecords('여의도'),
   },
   {
     id: '2',
-    name: '이서현',
-    nickname: '서현',
+    name: '이디자인',
+    nickname: '디자인',
     team: '디자인팀',
-    attendanceRecords: generateAttendanceRecords(),
+    office: '샛강',
+    role: '팀장',
+    slackUserId: 'U1234567891',
+    googleCalendarId: 'design@raftel.com',
+    attendanceRecords: generateAttendanceRecords('샛강'),
   },
   {
     id: '3',
-    name: '박지훈',
-    nickname: '지훈',
+    name: '박프론트',
+    nickname: '프론트',
     team: '개발팀',
-    attendanceRecords: generateAttendanceRecords(),
+    office: '여의도',
+    role: '팀원',
+    slackUserId: 'U1234567892',
+    googleCalendarId: 'frontend@raftel.com',
+    attendanceRecords: generateAttendanceRecords('여의도'),
   },
   {
     id: '4',
-    name: '최예진',
-    nickname: '예진',
+    name: '최마케팅',
+    nickname: '마케팅',
     team: '마케팅팀',
-    attendanceRecords: generateAttendanceRecords(),
+    office: '샛강',
+    role: '팀원',
+    slackUserId: 'U1234567893',
+    googleCalendarId: 'marketing@raftel.com',
+    attendanceRecords: generateAttendanceRecords('샛강'),
   },
   {
     id: '5',
-    name: '정태윤',
-    nickname: '태윤',
+    name: '정백엔드',
+    nickname: '백엔드',
     team: '개발팀',
-    attendanceRecords: generateAttendanceRecords(),
+    office: '여의도',
+    role: '팀원',
+    slackUserId: 'U1234567894',
+    googleCalendarId: 'backend@raftel.com',
+    attendanceRecords: generateAttendanceRecords('여의도'),
   },
   {
     id: '6',
-    name: '한소영',
-    nickname: '소영',
-    team: '디자인팀',
-    attendanceRecords: generateAttendanceRecords(),
+    name: '한인사',
+    nickname: '인사',
+    team: '인사팀',
+    office: '여의도',
+    role: '인사팀',
+    slackUserId: 'U1234567895',
+    googleCalendarId: 'hr@raftel.com',
+    attendanceRecords: generateAttendanceRecords('여의도'),
   },
   {
     id: '7',
-    name: '윤성민',
-    nickname: '성민',
+    name: '윤기획',
+    nickname: '기획',
     team: '기획팀',
-    attendanceRecords: generateAttendanceRecords(),
+    office: '샛강',
+    role: '팀장',
+    slackUserId: 'U1234567896',
+    googleCalendarId: 'planning@raftel.com',
+    attendanceRecords: generateAttendanceRecords('샛강'),
   },
   {
     id: '8',
-    name: '장혜림',
-    nickname: '혜림',
-    team: '마케팅팀',
-    attendanceRecords: generateAttendanceRecords(),
+    name: '장콘텐츠',
+    nickname: '콘텐츠',
+    team: '콘텐츠팀',
+    office: '여의도',
+    role: '팀원',
+    slackUserId: 'U1234567897',
+    googleCalendarId: 'content@raftel.com',
+    attendanceRecords: generateAttendanceRecords('여의도'),
   },
 ];
 
-export const teams = ['전체', '개발팀', '디자인팀', '마케팅팀', '기획팀'];
-
-// 데일리 스크럼 모킹 데이터
-export const getDailyScrum = (employeeId: string, date: string) => {
-  const scrums = [
-    "• 그리팅 미팅 (13:00)\n• 앱 이메일 인증 리팩토링\n• 스토어 이메일 수정\n• figma MCP, playwright MCP, cursor 연동 시연",
-    "• 정기 미팅 (15:00)\n• 웹 4.12.1 배포\n• 대표 프로필 버그 수정\n• 앱 이메일 인증 리팩토링",
-    "• 스프린트 회고 (16:00)\n• 결제 모듈 테스트 케이스 작성\n• 사용자 피드백 분석\n• AWS 인프라 최적화",
-    "• 클라이언트 미팅 (14:00)\n• 디자인 시스템 v2.0 구현\n• 모바일 앱 성능 개선\n• 코드 리뷰 진행",
-    "• 기획 회의 (10:30)\n• API 문서 업데이트\n• 데이터베이스 마이그레이션\n• 신규 기능 기술 검토",
-    "• 마케팅 전략 회의 (11:00)\n• A/B 테스트 결과 분석\n• SEO 최적화 작업\n• 소셜 미디어 컨텐츠 제작",
-    "• UX 리서치 미팅 (13:30)\n• 와이어프레임 수정\n• 프로토타입 제작\n• 사용성 테스트 준비",
-    "• 개발팀 스탠드업 (09:30)\n• 버그 수정 및 QA\n• 배포 파이프라인 개선\n• 모니터링 시스템 점검"
-  ];
-  
-  // employeeId와 date를 조합해서 일정한 인덱스를 생성
-  const hashCode = (employeeId + date).split('').reduce((a, b) => {
-    a = ((a << 5) - a) + b.charCodeAt(0);
-    return a & a;
-  }, 0);
-  
-  return scrums[Math.abs(hashCode) % scrums.length];
+// 회사 전체 현황 데이터
+export const mockCompanyData: CompanyDashboard = {
+  totalEmployees: mockEmployees.length,
+  currentAttendance: {
+    office: 5,
+    remote: 2,
+    break: 1,
+    off: 0,
+  },
+  officeStats: {
+    여의도: {
+      total: 5,
+      present: 3,
+      remote: 1,
+    },
+    샛강: {
+      total: 3,
+      present: 2,
+      remote: 1,
+    },
+  },
+  teamStats: [
+    {
+      teamName: '개발팀',
+      totalMembers: 3,
+      currentStatus: { work: 2, break: 1, off: 0 }
+    },
+    {
+      teamName: '디자인팀',
+      totalMembers: 1,
+      currentStatus: { work: 1, break: 0, off: 0 }
+    },
+    {
+      teamName: '마케팅팀',
+      totalMembers: 1,
+      currentStatus: { work: 1, break: 0, off: 0 }
+    },
+    {
+      teamName: '기획팀',
+      totalMembers: 1,
+      currentStatus: { work: 1, break: 0, off: 0 }
+    },
+    {
+      teamName: '콘텐츠팀',
+      totalMembers: 1,
+      currentStatus: { work: 1, break: 0, off: 0 }
+    },
+    {
+      teamName: '인사팀',
+      totalMembers: 1,
+      currentStatus: { work: 1, break: 0, off: 0 }
+    },
+  ]
 };
 
-export const getDailyScrumSlackLink = (employeeId: string, date: string) => {
-  // employeeId와 date를 조합해서 일정한 링크 생성
-  const hashCode = (employeeId + date).split('').reduce((a, b) => {
-    a = ((a << 5) - a) + b.charCodeAt(0);
-    return a & a;
-  }, 0);
-  
-  return `https://slack.com/archives/C123456789/${Math.abs(hashCode)}_daily_scrum_${employeeId}_${date}`;
+// 회사 주요 일정
+export const mockEvents: CompanyEvent[] = [
+  {
+    id: '1',
+    title: '신정',
+    date: '2025-01-01',
+    type: '공휴일',
+    description: '새해 첫날'
+  },
+  {
+    id: '2',
+    title: '라프텔 창립기념일',
+    date: '2025-01-15',
+    type: '창립기념일',
+    description: '회사 창립 기념일'
+  },
+  {
+    id: '3',
+    title: '전사 워크샵',
+    date: '2025-02-14',
+    type: '워크샵',
+    description: '2025년 1분기 전사 워크샵'
+  },
+  {
+    id: '4',
+    title: '설날',
+    date: '2025-01-29',
+    type: '공휴일',
+    description: '설날 연휴'
+  },
+  {
+    id: '5',
+    title: '3.1절',
+    date: '2025-03-01',
+    type: '공휴일',
+    description: '삼일절'
+  },
+];
+
+export const teams = ['전체', '개발팀', '디자인팀', '마케팅팀', '기획팀', '콘텐츠팀', '인사팀'];
+
+// 슬랙 연동 관련 유틸리티 함수들
+export const getSlackChannelLink = () => {
+  return 'https://raftel.slack.com/channels/work-status';
+};
+
+export const getSlackBotCommands = () => {
+  return [
+    { command: '출근', description: '여의도 사무실 출근' },
+    { command: '샛강출근', description: '샛강 사무실 출근' },
+    { command: '재택', description: '재택근무 시작' },
+    { command: '외근', description: '외근 시작' },
+    { command: '복귀', description: '외근에서 복귀' },
+    { command: '식사', description: '식사 시작' },
+    { command: '휴식', description: '휴식 시작' },
+    { command: '퇴근', description: '퇴근' },
+    { command: '연차', description: '연차 사용' },
+    { command: '반차', description: '반차 사용' },
+  ];
 };
