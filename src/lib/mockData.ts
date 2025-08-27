@@ -1,7 +1,6 @@
-import { Employee, AttendanceRecord, StatusChange, EditHistory, CompanyDashboard, CompanyEvent, WorkStatus } from '../types/employee';
-import { format, subDays, addHours, startOfDay } from 'date-fns';
+import { Employee, AttendanceRecord, StatusChange, EditHistory, CompanyDashboard, CompanyEvent } from '../types/employee';
+import { format, subDays } from 'date-fns';
 
-const workStatuses: WorkStatus[] = ['여의도_출근', '샛강_출근', '재택_출근', '외근', '복귀', '휴식', '식사', '퇴근'];
 
 const generateStatusChanges = (date: Date, office: '여의도' | '샛강'): StatusChange[] => {
   const changes: StatusChange[] = [];

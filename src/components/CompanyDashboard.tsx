@@ -1,14 +1,12 @@
 import { useState, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
-import { Users, Building, Home, Coffee, LogOut, Search, Calendar } from "lucide-react";
+import { Users, Building, Home, Coffee, Search } from "lucide-react";
 import { CompanyDashboard as CompanyDashboardType, TeamAttendanceStats, CompanyEvent, Employee } from "@/types/employee";
-import { format, subDays } from "date-fns";
-import { ko } from "date-fns/locale";
+import { subDays } from "date-fns";
 import { DateRange } from "react-day-picker";
 
 interface CompanyDashboardProps {
@@ -242,8 +240,6 @@ export function CompanyDashboard({ data, events, employees, onEmployeeClick }: C
 }
 
 function TeamStatusRow({ team }: { team: TeamAttendanceStats }) {
-  const workPercentage = (team.currentStatus.work / team.totalMembers) * 100;
-  
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center space-x-3">
@@ -295,28 +291,3 @@ function EventItem({ event }: { event: CompanyEvent }) {
   );
 }
 
-function OfficeStatus({ office, stats }: { office: string; stats: { total: number; present: number; remote: number; } }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{office} 오피스 현황</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <div className="text-sm text-muted-foreground">총 인원</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-blue-600">{stats.present}</div>
-            <div className="text-sm text-muted-foreground">출근</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-purple-600">{stats.remote}</div>
-            <div className="text-sm text-muted-foreground">재택</div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}

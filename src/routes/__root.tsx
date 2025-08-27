@@ -51,7 +51,7 @@ function RootComponent() {
                   <span>회사 현황</span>
                 </Link>
                 <Link 
-                  to="/employee/1" 
+                  to="/employee/$id" params={{ id: "1" }} 
                   className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors"
                   activeProps={{ className: "text-blue-600 font-medium" }}
                 >

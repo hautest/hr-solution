@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
 import { MessageSquare, Plus } from "lucide-react";
 import { AttendanceRecord, WorkStatus, Employee } from "@/types/employee";
 import { format } from "date-fns";
@@ -97,12 +96,6 @@ export function DayDetailPage({ employee, record, date, onUpdateRecord }: DayDet
     }
   };
 
-  // 시간 포맷 (HH:MM)
-  const formatTime = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-  };
 
   const uniqueStatuses = [...new Set(record.statusChanges.map(change => change.status))];
 

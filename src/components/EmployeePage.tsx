@@ -23,7 +23,6 @@ import { formatHours } from "@/lib/utils";
 import {
   format,
   startOfWeek,
-  endOfWeek,
   startOfMonth,
   endOfMonth,
   addDays,
@@ -116,7 +115,6 @@ export function EmployeePage({ employee, onDateClick }: EmployeePageProps) {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
       const firstDayOfMonth = new Date(year, month, 1);
-      const lastDayOfMonth = new Date(year, month + 1, 0);
       const startDay = getDay(firstDayOfMonth); // 일요일 시작
       const daysInMonth = getDaysInMonth(currentDate);
 
@@ -257,30 +255,7 @@ export function EmployeePage({ employee, onDateClick }: EmployeePageProps) {
       addDays(startOfWeekDate, i)
     ), [startOfWeekDate]);
 
-    const hours = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
 
-    // 각 날짜별 시간대별 현재 상태를 계산하는 함수
-    const getCurrentStatusAtHour = (date: Date, hour: number) => {
-      const record = getRecordForDate(date);
-      if (!record || !record.statusChanges.length) return null;
-      
-      // 해당 시간보다 이전의 가장 최근 상태 변경을 찾기
-      const relevantChanges = record.statusChanges
-        .filter(change => {
-          const changeHour = parseInt(change.time.split(':')[0]);
-          const changeMinute = parseInt(change.time.split(':')[1]);
-          const changeTimeInMinutes = changeHour * 60 + changeMinute;
-          const targetTimeInMinutes = hour * 60;
-          return changeTimeInMinutes <= targetTimeInMinutes;
-        })
-        .sort((a, b) => {
-          const aTime = a.time.split(':').map(Number);
-          const bTime = b.time.split(':').map(Number);
-          return (bTime[0] * 60 + bTime[1]) - (aTime[0] * 60 + aTime[1]);
-        });
-      
-      return relevantChanges.length > 0 ? relevantChanges[0].status : null;
-    };
 
     return (
       <Card>
@@ -470,7 +445,7 @@ export function EmployeePage({ employee, onDateClick }: EmployeePageProps) {
       return employee.attendanceRecords
         .filter((record) => {
           const recordDate = new Date(record.date);
-          return recordDate >= dateRange.from && recordDate <= dateRange.to;
+          return recordDate >= dateRange.from! && recordDate <= dateRange.to!;
         })
         .sort(
           (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
